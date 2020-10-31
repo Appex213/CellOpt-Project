@@ -1,0 +1,6 @@
+
+cd /project/test_project/users/$USER/ws/spectre_c_element_sera
+
+qrun spectre c_element_sera.cir
+
+python plot_spectre_print.py c_element_sera.print

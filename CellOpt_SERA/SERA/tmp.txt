@@ -1,0 +1,72 @@
+
+simulator lang=spice
+
+
+.PARAM 
+
++ Qp_fQ =  10.00
++ Qn_fQ = -QnVal
+
++ clmnt_nw=150e-09 
++ clmnt_pw=300e-09 
+
+
+simulator lang = spectre
+include  "/data/tsmc/65LP/pdk/models/spectre/toplevel.scs" section=tt_lib
+
+
+real dbl_exp(real t , real Q , real t1 , real t2) {
+  return (Q/(t1-t2))*(exp(-t/t1)-exp(-t/t2))
+}
+
+real dbl_exp_pn(real t , real t_start_p ,real t_start_n  , real Qp , real Qn , real t1 , real t2) {
+  return t<=t_start_p ? 0 : (t<=t_start_n ? dbl_exp(t-t_start_p,Qp,t1,t2) : dbl_exp(t-t_start_n,Qn,t1,t2)) ;
+}
+
+//                                          t     t_start_p  t_start_n   Qp           Qn            t1       t2
+Ibsrc1 (OUT vss_sera) bsource i=dbl_exp_pn($time, 300e-12,   1500e-12,   Qp_fQ*1e-15, Qn_fQ*1e-15,   150e-12, 100e-12)  
+
+
+simulator lang=spice
+
+VS_VDD vdd gnd DC 1.1
+VS_GND vss gnd DC 0
+VS_GND_SERA vss_sera gnd DC 0
+
+
+.SUBCKT c_element IN1 IN2 OUT vss vdd
+
+*   d   g   s   b 
+
+MP1 p1  IN1 vdd vdd pch l=60n w=clmnt_pw m=1
+MP2 OUT IN2 p1  vdd pch l=60n w=clmnt_pw m=1
+
+MN1 OUT IN2 n1  vss nch l=60n w=clmnt_nw m=1
+MN2 n1  IN1 vss vss nch l=60n w=clmnt_nw m=1
+
+.ENDS
+
+
+XI1  IN IN OUT vss vdd c_element 
+
+* Input wave 
+
+* Pulse arguments
+
+* V1     Initial value
+* V2     Pulsed value
+* TD     Delay time
+* TR     Rise time
+* TF     Fall time
+* PW     Pulse width
+* PER    Period
+
+*            PULSE(V1  V2    TD     TR   TF    PW     PER)
+  VIN  IN  0 PULSE( 0 1.1  1000P    50P  50P   1000P  2000P)
+
+
+.TRAN 1P 2000P 
+		  			
+.PRINT V(IN) V(OUT) I(VS_GND_SERA) 
+
+

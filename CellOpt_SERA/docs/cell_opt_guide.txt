@@ -1,0 +1,19 @@
+
+cd ... cell_opt
+
+source   utils/cell_opt_env_setup.sh
+
+python3 utils/launcher.py <CELL_NAME> <> <>
+
+--------------
+
+REF:
+
+/project/tsmc65/users/benmosm6/ws/Liberate/cell_opt_FA/
+/project/tsmc65/users/benmosm6/ws/Liberate/cell_opt_FA/opt_out/2019-10-24 23:49:33/logs
+
+Mattan: python3 cellopt_algorithm.py <spice netlist file name>
+
+=>
+
+python3 cellopt_algorithm_test.py FA__0.0783

@@ -1,0 +1,49 @@
+VERSION 5.7 ;
+BUSBITCHARS "[]" ;
+DIVIDERCHAR "/" ;
+
+PROPERTYDEFINITIONS
+  MACRO CatenaDesignType STRING ;
+END PROPERTYDEFINITIONS
+
+MACRO DLY_CAP_X1
+  CLASS CORE ;
+  ORIGIN -0.235 -0.15 ;
+  FOREIGN DLY_CAP_X1 0.235 0.15 ;
+  SIZE 1 BY 1.8 ;
+  SYMMETRY X Y ;
+  SITE CoreSite ;
+  PIN VSS
+    DIRECTION INOUT ;
+    USE GROUND ;
+    SHAPE ABUTMENT ;
+    PORT
+      LAYER M1 ;
+        RECT 0.19 0 1.28 0.3 ;
+        RECT 1.01 0 1.18 0.47 ;
+        RECT 0.29 0 0.46 0.47 ;
+    END
+  END VSS
+  PIN A
+    DIRECTION INPUT ;
+    USE SIGNAL ;
+    PORT
+      LAYER M1 ;
+        RECT 0.41 1 1.06 1.1 ;
+    END
+  END A
+  PIN VDD
+    DIRECTION INOUT ;
+    USE POWER ;
+    SHAPE ABUTMENT ;
+    PORT
+      LAYER M1 ;
+        RECT 0.19 1.8 1.28 2.1 ;
+        RECT 1.045 1.39 1.145 2.1 ;
+        RECT 0.325 1.39 0.425 2.1 ;
+    END
+  END VDD
+  PROPERTY CatenaDesignType "deviceLevel" ;
+END DLY_CAP_X1
+
+END LIBRARY

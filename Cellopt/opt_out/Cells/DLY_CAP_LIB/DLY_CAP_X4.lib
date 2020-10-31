@@ -1,0 +1,135 @@
+library (DLY_CAP_X4) {
+  /* Models written by Liberate dev from Cadence Design Systems, Inc. on Mon Apr  6 16:39:04 IDT 2020 */
+  comment : "";
+  date : "$Date: Mon Apr  6 16:38:53 2020 $";
+  revision : "1.0";
+  delay_model : table_lookup;
+  capacitive_load_unit (1,pf);
+  current_unit : "1mA";
+  leakage_power_unit : "1nW";
+  pulling_resistance_unit : "1kohm";
+  time_unit : "1ns";
+  voltage_unit : "1V";
+  voltage_map (VDD, 1.2);
+  voltage_map (VSS, 0);
+  voltage_map (GND, 0);
+  default_cell_leakage_power : 0;
+  default_fanout_load : 1;
+  default_max_transition : 0.6939;
+  default_output_pin_cap : 0;
+  in_place_swap_mode : match_footprint;
+  input_threshold_pct_fall : 50;
+  input_threshold_pct_rise : 50;
+  nom_process : 1;
+  nom_temperature : 25;
+  nom_voltage : 1.2;
+  output_threshold_pct_fall : 50;
+  output_threshold_pct_rise : 50;
+  slew_derate_from_library : 0.75;
+  slew_lower_threshold_pct_fall : 20;
+  slew_lower_threshold_pct_rise : 20;
+  slew_upper_threshold_pct_fall : 80;
+  slew_upper_threshold_pct_rise : 80;
+  operating_conditions (tt_1p2V_25C) {
+    process : 1;
+    temperature : 25;
+    voltage : 1.2;
+  }
+  default_operating_conditions : tt_1p2V_25C;
+  lu_table_template (delay_template_7x7_3) {
+    variable_1 : input_net_transition;
+    variable_2 : total_output_net_capacitance;
+    index_1 ("0.0065, 0.0175, 0.0393, 0.0829, 0.17, 0.3448, 0.6939");
+    index_2 ("0.0014, 0.00513, 0.0125, 0.0275, 0.0573, 0.117, 0.236");
+  }
+  power_lut_template (passive_power_template_7x1_3) {
+    variable_1 : input_transition_time;
+    index_1 ("0.0065, 0.0175, 0.0393, 0.0829, 0.17, 0.3448, 0.6939");
+  }
+  power_lut_template (power_template_7x7_3) {
+    variable_1 : input_transition_time;
+    variable_2 : total_output_net_capacitance;
+    index_1 ("0.0065, 0.0175, 0.0393, 0.0829, 0.17, 0.3448, 0.6939");
+    index_2 ("0.0014, 0.00513, 0.0125, 0.0275, 0.0573, 0.117, 0.236");
+  }
+  cell (DLY_CAP_X4) {
+    area : 0;
+    cell_leakage_power : 0.02596;
+    pg_pin (VDD) {
+      pg_type : primary_power;
+      voltage_name : "VDD";
+    }
+    pg_pin (VSS) {
+      pg_type : primary_ground;
+      voltage_name : "VSS";
+    }
+    leakage_power () {
+      value : 0.0473993;
+      when : "A";
+      related_pg_pin : VDD;
+    }
+    leakage_power () {
+      value : 0;
+      when : "A";
+      related_pg_pin : VSS;
+    }
+    leakage_power () {
+      value : 0.00451943;
+      when : "!A";
+      related_pg_pin : VDD;
+    }
+    leakage_power () {
+      value : 0;
+      when : "!A";
+      related_pg_pin : VSS;
+    }
+    leakage_power () {
+      value : 0.0259594;
+      related_pg_pin : VDD;
+    }
+    leakage_power () {
+      value : 0;
+      related_pg_pin : VSS;
+    }
+    pin (A) {
+      direction : input;
+      related_ground_pin : VSS;
+      related_power_pin : VDD;
+      capacitance : 0.002795;
+      rise_capacitance : 0.002795;
+      rise_capacitance_range (0.002756, 0.002795);
+      fall_capacitance : 0.002794;
+      fall_capacitance_range (0.002753, 0.002794);
+      internal_power () {
+        related_pg_pin : VDD;
+        rise_power (passive_power_template_7x1_3) {
+          index_1 ("0.0065, 0.0175, 0.0393, 0.0829, 0.17, 0.3448, 0.6939");
+          values ( \
+            "-0.001045, -0.001041, -0.001043, -0.001038, -0.001041, -0.001041, -0.001041" \
+          );
+        }
+        fall_power (passive_power_template_7x1_3) {
+          index_1 ("0.0065, 0.0175, 0.0393, 0.0829, 0.17, 0.3448, 0.6939");
+          values ( \
+            "0.001051, 0.001054, 0.001058, 0.001049, 0.001053, 0.001049, 0.001047" \
+          );
+        }
+      }
+      internal_power () {
+        related_pg_pin : VSS;
+        rise_power (passive_power_template_7x1_3) {
+          index_1 ("0.0065, 0.0175, 0.0393, 0.0829, 0.17, 0.3448, 0.6939");
+          values ( \
+            "0.0009805, 0.000979, 0.0009829, 0.0009788, 0.0009826, 0.0009792, 0.000977" \
+          );
+        }
+        fall_power (passive_power_template_7x1_3) {
+          index_1 ("0.0065, 0.0175, 0.0393, 0.0829, 0.17, 0.3448, 0.6939");
+          values ( \
+            "-0.0009755, -0.0009706, -0.000972, -0.00097, -0.0009717, -0.0009717, -0.0009715" \
+          );
+        }
+      }
+    }
+  }
+}

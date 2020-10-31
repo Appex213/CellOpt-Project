@@ -1,0 +1,3 @@
+
+include  "/data/tsmc/65LP/pdk/models/spectre/toplevel.scs" section=tt_lib
+

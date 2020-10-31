@@ -1,0 +1,5 @@
+/project/test_project/users/benmosm6/ws/Liberate/cell_opt_post_layout/utils/cellopt_config.py
+/project/test_project/users/benmosm6/ws/Liberate/cell_opt_XOR2/utils/cellopt_config.py
+/project/test_project/users/benmosm6/ws/Liberate/cell_opt_XOR2/testing/cellopt_config.py
+/project/test_project/users/benmosm6/ws/Liberate/cell_opt_XOR3/utils/cellopt_config.py
+/project/test_project/users/benmosm6/ws/Liberate/cell_opt_FA/utils/cellopt_config.py

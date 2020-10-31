@@ -1,0 +1,182 @@
+import os
+from typing import List
+import datetime
+import time
+from math import exp
+import multiprocessing as mp
+
+# ===============================================================================================
+
+
+LOGS = os.environ["CELL_OPT_ROOT_DIR"] + "/workspace/algorithm_logs"
+INPUT = os.environ["CELL_OPT_ROOT_DIR"] + "/workspace/pending"
+OUTPUT = os.environ["CELL_OPT_ROOT_DIR"] + "/workspace/output"
+RUNSPACE = os.environ["CELL_OPT_ROOT_DIR"] + "/workspace/runspace"
+OPT_IN = os.environ["CELL_OPT_ROOT_DIR"] + "/opt_in"
+OPT_OUT = os.environ["CELL_OPT_ROOT_DIR"] + "/opt_out"
+
+
+def get_worker_id():
+    return mp.current_process().name
+
+
+def debug(msg):
+    print(get_date() + " DEBUG: " + msg)
+
+
+def info(msg):
+    print(get_date() + " INFO: " + msg)
+
+
+def warning(msg):
+    print(get_date() + " WARNING: " + msg)
+
+
+def get_date():
+    return '[' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + '][' + get_worker_id() + ']'
+
+# ===============================================================================================
+
+
+class DataRow:      # Single row in file
+    def __init__(self, time=0, vin=0, vout=0, sera_current=0):
+        self.time = time
+        self.vin = vin
+        self.vout = vout
+        self.sera_current = sera_current
+
+    def __str__(self):
+        return '{:.3e}'.format(self.time) + '\t' + \
+               '{:.3e}'.format(self.vin) + '\t' + \
+               '{:.3e}'.format(self.vout) + '\t' + \
+               '{:.3e}'.format(self.sera_current)
+
+
+class DataTable:    # Single SPICE run
+    def __init__(self, q=0):
+        self.q = q
+        self.data_rows = []      # List type hint
+
+    def __str__(self):
+        print("Q = " + '{:.6f}'.format(self.q) + '\n')
+        for row in self.data_rows:
+            print(row)
+        return '\n\n\n'
+
+
+class QSweep:       # Full sweep
+    def __init__(self, sera_obj):
+        self.path = os.path.join(RUNSPACE, sera_obj.dir)
+        self.nw = sera_obj.param_dict['nw']
+        self.pw = sera_obj.param_dict['pw']
+        self.q_min = sera_obj.q_range[0]
+        self.q_max = sera_obj.q_range[1]
+        self.delta_q = float(self.q_max - self.q_min) / 2
+        self.candidate_q = float(self.q_min + self.delta_q)
+        self.q = 0
+        self.sweeps = []      # List type hint
+        self.thresh_high = 0.6
+        self.thresh_low = 0.5
+        self.stop_flag = False
+        self.debug_q_list = []
+        self.start_time = time.time()
+
+    def sweep_qcrit(self):
+        os.system("cd " + self.path)
+        os.system("echo "" > sweep_qcrit.print")
+
+        self.debug_q_list.append(self.candidate_q)
+        qstr = "%2.4f" % self.candidate_q
+        os.system("sed 's/QVal/%s/g' c_element_sera_template.cir > sweep_qcritic_run.cir" % qstr)
+        os.system("qrsh -V -cwd spectre sweep_qcritic_run.cir > stdout.log")
+        # os.system("cp sweep_qcritic_run.print >> sweep_qcrit_%s.print" % qstr)
+        os.system("cat sweep_qcritic_run.print >> sweep_qcrit.print")
+
+    def parse_sweep_results(self):
+        suffix_dict = {'m': 1e-3,   'u': 1e-6,  'n': 1e-9,
+                       'p': 1e-12,  'f': 1e-15, 'a': 1e-18,
+                       'K': 1e+3,   'M': 1e+6,  'G': 1e+9}  # Suffixes for meas. unit
+
+        with open(os.path.join(self.path, 'sweep_qcritic_run.print'), 'r') as file:
+            skips = 3
+            for row in file:
+                if skips != 0:
+                    skips -= 1
+                    continue
+                elif row == 'x\n':
+                    skips += 1
+                    dt_obj = DataTable(self.candidate_q)
+                elif row == 'y\n':
+                    self.sweeps.append(dt_obj)
+                    break
+                else:
+                    dr_obj = DataRow()
+                    # split by 2 spaces, remove empty strings & \n
+                    row = list(filter(None, row[:-1].split('  ')))
+                    column = 1
+                    for item in row:
+                        item = item.split()
+                        value = float(item[0])
+                        if len(item) > 1:
+                            value = value * suffix_dict[item[1]]
+                        if column == 1:  # time column
+                            dr_obj.time = value
+                        elif column == 2:
+                            dr_obj.vin = value
+                        elif column == 3:
+                            dr_obj.vout = value
+                        elif column == 4:
+                            dr_obj.sera_current = value
+                        column += 1
+                    dt_obj.data_rows.append(dr_obj)
+
+    def find_qcrit(self):
+        sera_event = False
+        for index in range(len(self.sweeps[-1].data_rows)):
+            if self.sweeps[-1].data_rows[index].vin == 0 and self.sweeps[-1].data_rows[index].vout < self.thresh_high:
+                sera_event = True
+            if self.sweeps[-1].data_rows[index].vin == 1.1 and self.sweeps[-1].data_rows[index].vout > self.thresh_low:
+                sera_event = True
+        if sera_event:
+            if abs(self.sweeps[-1].q - self.q) < 0.01 * self.q:    # Stop condition
+                # debug(str(self.sweeps[-1].q))
+                # debug(str(self.q))
+                # debug(str(abs(self.sweeps[-1].q - self.q)))
+                self.stop_flag = True
+            self.q = self.sweeps[-1].q
+        return sera_event
+
+
+def clean_workspace():
+    for file in os.listdir():
+        if file.endswith('.print') or file.endswith('.log'):
+            os.remove(file)
+
+
+def run_qcrit_finder(sera_obj):
+    # clean_workspace()
+    sweep_run = QSweep(sera_obj)
+    os.chdir(sweep_run.path)
+    while not sweep_run.stop_flag:
+        sweep_run.sweep_qcrit()     # Launch spice sweeps
+        sweep_run.parse_sweep_results()      # Find Qcrit
+
+        sweep_run.delta_q = sweep_run.delta_q / 2
+        if sweep_run.find_qcrit():      # If SERA event occurred, decrease candidate Qcrit for next run
+            sweep_run.candidate_q -= sweep_run.delta_q
+        else:                           # If no SERA event occurred, increase candidate Qcrit for next run
+            sweep_run.candidate_q += sweep_run.delta_q
+    # for item in sweep_run.sweeps:
+    #     print(item)
+    info("Qcrit = " + str(sweep_run.q))
+    # debug("min = " + str(sweep_run.q_min) + "\tmax = " + str(sweep_run.q_max))
+    debug(str(sweep_run.debug_q_list))
+    debug('Total runtime: ' + str(datetime.timedelta(seconds=round(time.time() - sweep_run.start_time))))
+    return sweep_run.q
+
+
+def get_sera_score(sera_obj):
+    qcrit = run_qcrit_finder(sera_obj)
+    area = sera_obj.param_dict['nw'] * sera_obj.param_dict['pw']
+    sera_obj.score = (area * exp(-qcrit / sera_obj.qn)) + (area * exp(-qcrit / sera_obj.qp))
+    return sera_obj
